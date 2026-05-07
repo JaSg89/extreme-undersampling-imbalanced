@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (too large for repository)
+*.csv
+*.h5
+*.joblib
+
+# Logs
+*.log
+
+# Output directories
+data_balance/
+data_balance_IEEE/
+data_balance_IEEE_balanced/
+
+# Generated figures
+*.png
+*.pdf

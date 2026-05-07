@@ -1,20 +1,45 @@
-
+import pandas as pd
+import numpy as np
 from scipy.stats import friedmanchisquare
+import scikit_posthocs as sp
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import friedmanchisquare
+import re
 
-df_feus = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/FEUS/ALL_MODELS_recall_FEUS_summary.csv')
-df_meus = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/MEUS/ALL_MODELS_recall_MEUS_summary.csv')
-df_smote = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/SMOTE_1sim/NN_SMOTE/NN_recall_SMOTE.csv')
-df_nearmiss = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/NearMiss/ALL_MODELS_recall_NearMiss_summary.csv')
-df_rus = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/RUS/ALL_MODELS_recall_RUS_summary.csv')
-precision_data = pd.read_csv('C:/Users/saave/Desktop/data_balance/Recall_scenario2/Precision.csv')
+
+df_feus = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/FEUS_depurada/ALL_MODELS_FEUS_summary.csv')
+df_meus = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/MEUS/ALL_MODELS_MEUS_summary.csv')
+df_smote = pd.read_csv('C:/Users/Diana/Desktop/data_balance/Recall_scenario2/SMOTE/ALL_MODELS_SMOTE_summary.csv')
+df_nearmiss = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/NearMiss/ALL_MODELS_NearMiss_summary.csv')
+df_rus = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/RUS/ALL_MODELS_RUS_summary.csv')
+df_enn = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/ENN/ALL_MODELS_ENN_summary.csv')
+df_tl = pd.read_csv('C:/Users/Diana/Desktop/data_balance_IEEE/TL/ALL_MODELS_TL_summary.csv')
+
 
 recall_data = pd.DataFrame({
     'FEUS': df_feus['recall_NN_FEUS'].head(30),
     'MEUS': df_meus['recall_NN_MEUS'].head(30),
     'SMOTE': df_smote['recall_NN_SMOTE'].head(30),
     'NearMiss': df_nearmiss['recall_NN_NearMiss'].head(30),
-    'RUS': df_rus['recall_NN_RUS'].head(30)
+    'RUS': df_rus['recall_NN_RUS'].head(30),
+    'ENN': df_enn['recall_NN_ENN'].head(30),
+    'TL': df_tl['recall_NN_TL'].head(30)
 })
+
+precision_data = pd.DataFrame({
+    'FEUS': df_feus['precision_NN_FEUS'].head(30),
+    'MEUS': df_meus['precision_NN_MEUS'].head(30),
+    'SMOTE': df_smote['precision_NN_SMOTE'].head(30),
+    'NearMiss': df_nearmiss['precision_NN_NearMiss'].head(30),
+    'RUS': df_rus['precision_NN_RUS'].head(30),
+    'ENN': df_enn['precision_NN_ENN'].head(30),
+    'TL': df_tl['precision_NN_TL'].head(30)
+})
+
+# --- Verificación ---
+print(f"Filas en Recall Data: {len(recall_data)}")
+print(f"Filas en SMOTE: {len(smote_recall)}")
 
 
 stat, p_value = friedmanchisquare(*[recall_data[col] for col in recall_data.columns])
@@ -199,4 +224,108 @@ plt.tight_layout()
 fig.savefig('paired_scatter.png', dpi=300, bbox_inches='tight')
 fig.savefig('paired_scatter.pdf', bbox_inches='tight')
 plt.show()
+
+
+
+from matplotlib.ticker import FormatStrFormatter
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3) Boxplots for Recall and Precision across the 30 runs
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Pasar a formato largo
+recall_long = recall_data.melt(var_name='Technique', value_name='Recall')
+precision_long = precision_data.melt(var_name='Technique', value_name='Precision')
+
+# Orden fijo de las técnicas
+order = ['FEUS', 'MEUS', 'SMOTE', 'NearMiss', 'RUS', 'ENN', 'TL']
+
+# Paleta fija: mismo color por técnica en ambos gráficos
+palette = {
+    'FEUS': '#1f77b4',
+    'MEUS': '#ff7f0e',
+    'SMOTE': '#2ca02c',
+    'NearMiss': '#d62728',
+    'RUS': '#9467bd',
+    'ENN': '#8c564b',
+    'TL': '#e377c2'
+}
+
+# Tamaño exacto: 4027x1320 píxeles
+dpi = 300
+fig_width = 4027 / dpi
+fig_height = 1320 / dpi
+
+fig, axes = plt.subplots(1, 2, figsize=(fig_width, fig_height), dpi=dpi)
+
+# Misma cantidad de ticks en Y, pero no necesariamente mismo rango
+n_ticks = 6
+
+# Límites para Recall
+recall_min = recall_long['Recall'].min()
+recall_max = recall_long['Recall'].max()
+recall_pad = 0.02
+recall_ymin = max(0, recall_min - recall_pad)
+recall_ymax = min(1, recall_max + recall_pad)
+recall_ticks = np.linspace(recall_ymin, recall_ymax, n_ticks)
+
+# Límites para Precision
+precision_min = precision_long['Precision'].min()
+precision_max = precision_long['Precision'].max()
+precision_pad = 0.02
+precision_ymin = max(0, precision_min - precision_pad)
+precision_ymax = min(1, precision_max + precision_pad)
+precision_ticks = np.linspace(precision_ymin, precision_ymax, n_ticks)
+
+# -------------------- Recall --------------------
+sns.boxplot(
+    data=recall_long,
+    x='Technique',
+    y='Recall',
+    order=order,
+    palette=palette,
+    ax=axes[0],
+    showfliers=False
+)
+
+
+axes[0].set_title('')
+axes[0].set_xlabel('Resampling Technique', fontsize=12)
+axes[0].set_ylabel('Recall', fontsize=12)
+axes[0].set_ylim(recall_ymin, recall_ymax)
+axes[0].set_yticks(recall_ticks)
+axes[0].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+axes[0].tick_params(axis='x', labelsize=9, rotation=0)
+axes[0].tick_params(axis='y', labelsize=10)
+
+# -------------------- Precision --------------------
+sns.boxplot(
+    data=precision_long,
+    x='Technique',
+    y='Precision',
+    order=order,
+    palette=palette,
+    ax=axes[1],
+    showfliers=False
+)
+
+
+
+axes[1].set_title('')
+axes[1].set_xlabel('Resampling Technique', fontsize=12)
+axes[1].set_ylabel('Precission', fontsize=12)
+axes[1].set_ylim(precision_ymin, precision_ymax)
+axes[1].set_yticks(precision_ticks)
+axes[1].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+axes[1].tick_params(axis='x', labelsize=9, rotation=0)
+axes[1].tick_params(axis='y', labelsize=10)
+
+plt.tight_layout()
+
+# Guardar
+plt.savefig('boxplots_recall_precision.png', dpi=dpi, bbox_inches=None)
+plt.savefig('boxplots_recall_precision.pdf', dpi=dpi, bbox_inches=None)
+
+plt.show()
+
 
